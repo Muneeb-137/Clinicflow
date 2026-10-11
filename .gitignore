@@ -1,0 +1,51 @@
+# Dependencies and builds
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Secrets: copy .env.example to .env locally
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+logs/
+
+# Local file backups (git history replaces these)
+backups/
+
+# Vision: model weights are downloaded by Ultralytics on first run
+*.pt
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Test media
+sample videos/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Logs
+*.log
