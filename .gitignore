@@ -49,3 +49,6 @@ coverage/
 
 # Logs
 *.log
+clinicflow-vision/
+clinicflow-vision/
+.vscode/
