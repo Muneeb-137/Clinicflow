@@ -451,6 +451,65 @@ function BookAppointmentPage({
     }, 1800);
   };
 
+  /*
+   * Clicking "Book appointment" (sidebar or header) while
+   * already on this page starts over at step 1. The visit
+   * type and doctor stay chosen; a held time goes through
+   * the usual "leave this time?" check first. After a
+   * finished booking it starts a new, empty one.
+   */
+  const lastLocationKeyRef = useRef(location.key);
+
+  useEffect(() => {
+    if (location.key === lastLocationKeyRef.current) {
+      return;
+    }
+
+    lastLocationKeyRef.current = location.key;
+
+    // Rebook and calendar arrivals carry their own state.
+    if (location.state) {
+      return;
+    }
+
+    if (bookingSuccess) {
+      setBookingSuccess(false);
+      setBookingData({
+        appointmentReasonId: null,
+        doctorId: null,
+        reasonForVisit: "",
+        appointmentDate: "",
+        startTime: "",
+        patientId: isPatientBooking
+          ? loggedInPatient?.patient_id ?? null
+          : null,
+        notes: "",
+      });
+      setAvailableTimes([]);
+      setError("");
+      setCurrentStep(1);
+      return;
+    }
+
+    if (currentStep === 1) {
+      return;
+    }
+
+    if (appointmentHold && holdSecondsRemaining > 0) {
+      sessionStorage.setItem(
+        "clinicflow_pending_booking_navigation",
+        "__booking_step_1__",
+      );
+
+      setShowLeaveBookingModal(true);
+      return;
+    }
+
+    setError("");
+    goToStep(1);
+    // Only reacts to new navigations to this page.
+  }, [location.key]);
+
   useEffect(() => {
   if (bookingSuccess) {
     return;
@@ -1103,6 +1162,24 @@ useEffect(() => {
     appointmentHold.start_time.startsWith(
       bookingData.startTime,
     );
+
+  // "HH:MM" of this booking's held time on a date, or "".
+  const heldTimeOn = (date: string) =>
+    appointmentHold &&
+    appointmentHold.doctor_id === bookingData.doctorId &&
+    appointmentHold.appointment_date.startsWith(date)
+      ? appointmentHold.start_time.slice(0, 5)
+      : "";
+
+  const heldDate =
+    appointmentHold?.appointment_date.slice(0, 10) ?? "";
+
+  // Step 2 is showing a different date than the held one.
+  const viewingOtherDate =
+    currentStep === 2 &&
+    appointmentHold !== null &&
+    heldDate !== "" &&
+    bookingData.appointmentDate !== heldDate;
 
   const holdMinutes = Math.floor(
     holdSecondsRemaining / 60,
@@ -1814,13 +1891,44 @@ const response = await apiFetch(
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4">
       <div>
         <p className="text-sm font-bold text-slate-900">
-          Appointment time reserved
+          {appointmentHold.start_time
+            ? `${formatBookingDate(heldDate)} at ${formatBookingTime(appointmentHold.start_time)} is reserved`
+            : "Appointment time reserved"}
         </p>
 
         <p className="mt-1 text-xs text-slate-600">
-          Complete your booking before this reservation
-          expires.
+          {viewingOtherDate
+            ? "Still held for you while you look at other dates. Picking a new time replaces it."
+            : "Complete your booking before this reservation expires."}
         </p>
+
+        {viewingOtherDate && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setBookingData((currentData) => ({
+                  ...currentData,
+                  appointmentDate: heldDate,
+                  startTime: heldTimeOn(heldDate),
+                }));
+                setError("");
+              }}
+              className="rounded-lg bg-[#13B2B3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#109a9b]"
+            >
+              Go back to this time
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void releaseAppointmentHold();
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Release it
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="shrink-0 rounded-xl bg-white px-4 py-2 text-center shadow-sm">
@@ -1891,24 +1999,20 @@ const response = await apiFetch(
           isLoadingSlots={isLoadingSlots}
           slotsError={slotsError}
           onDateSelect={(date) => {
-            void (async () => {
-              /*
-              * If the user changes dates while holding a time,
-              * release the old reservation immediately.
-              */
-              if (appointmentHold) {
-                await releaseAppointmentHold();
-              }
+            /*
+             * A held time is kept while looking at other
+             * dates, and shows as selected again on its own
+             * date. It is only replaced when another time is
+             * picked (or released from the banner).
+             */
+            setBookingData((currentData) => ({
+              ...currentData,
+              appointmentDate: date,
+              startTime: heldTimeOn(date),
+            }));
 
-              setBookingData((currentData) => ({
-                ...currentData,
-                appointmentDate: date,
-                startTime: "",
-              }));
-
-              setSlotsError("");
-              setError("");
-            })();
+            setSlotsError("");
+            setError("");
           }}
           onTimeSelect={(time) => {
             void handleTimeSelect(time);
