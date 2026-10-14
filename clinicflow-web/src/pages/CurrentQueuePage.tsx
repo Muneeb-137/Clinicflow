@@ -7,7 +7,6 @@ import {
   Clock3,
   DoorOpen,
   FileCheck2,
-  Search,
   X,
   Stethoscope,
   UsersRound,
@@ -39,6 +38,7 @@ import {
   type WalkInNextStepPatient,
 } from "../components/waittime/WalkInNextStepModal";
 import LiveIndicator from "../components/LiveIndicator";
+import QueuePatientSearch from "../components/QueuePatientSearch";
 
 // /api/appointments/flow/today rows.
 type FlowAppointment = QueueAppointment &
@@ -1181,6 +1181,9 @@ function LiveQueuePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [roomingId, setRoomingId] = useState<number | null>(null);
+  // Patient picked in the search dropdown for a walk-in.
+  const [walkInPatientId, setWalkInPatientId] =
+    useState<number | null>(null);
   const [showWalkInModal, setShowWalkInModal] =
   useState(false);
   const [checkingInId, setCheckingInId] = useState<number | null>(null);
@@ -1774,24 +1777,27 @@ const filteredRoomedAppointments = useMemo(
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:w-[340px]">
-            <Search
-              size={19}
-              className="shrink-0 text-slate-400"
-            />
-
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search patient or doctor"
-              className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
-            />
-          </div>
+          <QueuePatientSearch
+            value={searchTerm}
+            onChange={setSearchTerm}
+            queue={[
+              ...scheduledAppointments,
+              ...walkInAppointments,
+              ...waitingAppointments,
+              ...roomedAppointments,
+            ]}
+            onAddWalkIn={(patientId) => {
+              setWalkInPatientId(patientId);
+              setShowWalkInModal(true);
+            }}
+          />
 
           <button
             type="button"
-            onClick={() => setShowWalkInModal(true)}
+            onClick={() => {
+              setWalkInPatientId(null);
+              setShowWalkInModal(true);
+            }}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#13B2B3] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#109a9b]"
           >
             <Plus size={17} />
@@ -1993,7 +1999,11 @@ const filteredRoomedAppointments = useMemo(
 
 <AddWalkInModal
   open={showWalkInModal}
-  onClose={() => setShowWalkInModal(false)}
+  initialPatientId={walkInPatientId}
+  onClose={() => {
+    setShowWalkInModal(false);
+    setWalkInPatientId(null);
+  }}
   onAdded={(message) => {
     setError("");
     setSuccessMessage(message);

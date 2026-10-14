@@ -63,12 +63,15 @@ type AddWalkInModalProps = {
   // Called after the walk-in is added, with a message to
   // show staff.
   onAdded?: (message: string) => void;
+  // Patient chosen from the Live Queue search, if any.
+  initialPatientId?: number | null;
 };
 
 function AddWalkInModal({
   open,
   onClose,
   onAdded,
+  initialPatientId = null,
 }: AddWalkInModalProps) {
   const navigate = useNavigate();
 
@@ -123,6 +126,12 @@ function AddWalkInModal({
 
   const [admissionError, setAdmissionError] =
     useState(false);
+
+  useEffect(() => {
+    if (open && initialPatientId !== null) {
+      setSelectedPatientId(initialPatientId);
+    }
+  }, [open, initialPatientId]);
 
   useEffect(() => {
     if (!open) {
