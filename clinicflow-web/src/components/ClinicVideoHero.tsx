@@ -8,9 +8,13 @@ import clinicVideo from "../assets/clinic_corridor.mp4";
  * and patient dashboards. "How it works" (right side) opens
  * the page that explains ClinicFlow.
  */
-function ClinicVideoHero() {
+function ClinicVideoHero({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="relative mb-2 h-[265px] overflow-hidden rounded-3xl shadow-xl">
+    <div
+      className={`relative overflow-hidden rounded-3xl shadow-xl ${
+        compact ? "h-[215px] lg:h-[clamp(200px,calc(100vh-472px),265px)]" : "mb-2 h-[265px]"
+      }`}
+    >
       <video
         autoPlay
         muted
@@ -24,7 +28,7 @@ function ClinicVideoHero() {
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/25 to-transparent" />
 
       <div className="relative z-10 flex h-full max-w-xl flex-col justify-center px-10">
-        <span className="mb-4 w-fit rounded-full border border-[#13B2B3]/35 bg-[#13B2B3]/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#13B2B3]">
+        <span className="mb-3 w-fit rounded-full border border-[#13B2B3]/35 bg-[#13B2B3]/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#13B2B3]">
           Intelligent clinic operations
         </span>
 
@@ -34,7 +38,7 @@ function ClinicVideoHero() {
           Better patient care.
         </h1>
 
-        <p className="mt-5 max-w-xl text-lg leading-7 text-slate-200">
+        <p className={`max-w-xl text-lg leading-7 text-slate-200 ${compact ? "mt-3" : "mt-5"}`}>
           Real-time queue visibility, intelligent wait-time predictions,
           and smoother patient flow.
         </p>
